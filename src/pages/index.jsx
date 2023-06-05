@@ -15,7 +15,8 @@ const HomePage = () => {
     maximumDownloads: 0,
     startEndStr: '',
     avgDownloadsMonthly: 0,
-    avgDownloadsWeekly: 0
+    avgDownloadsWeekly: 0,
+    isNotFound: false
   });
   const fetchFromStartAndEnd = async (startDate, endDate) => {
     if (searching) return;
@@ -45,7 +46,8 @@ const HomePage = () => {
         maximumDownloads: formatThousands(result.reduce((a, b) => Math.max(a, b), 0)),
         startEndStr: `${labels[0]} to ${labels[labels.length - 1]}`,
         avgDownloadsMonthly: formatThousands(totalDownloads / result.length),
-        avgDownloadsWeekly: formatThousands(totalDownloads / (result.length / 4))
+        avgDownloadsWeekly: formatThousands(totalDownloads / (result.length / 4)),
+        isNotFound: false
       }
     });
 
@@ -85,7 +87,8 @@ const HomePage = () => {
         maximumDownloads: formatThousands(result.reduce((a, b) => Math.max(a, b), 0)),
         startEndStr: `${labels[labels.length - 1]} to ${labels[0]}`,
         avgDownloadsMonthly: formatThousands(totalDownloads / result.length),
-        avgDownloadsWeekly: formatThousands(totalDownloads / (result.length / 4))
+        avgDownloadsWeekly: formatThousands(totalDownloads / (result.length / 4)),
+        isNotFound: false
       }
     });
 
@@ -198,18 +201,55 @@ const HomePage = () => {
   };
 
   const fetchPackageInfo = async () => {
-    setSearching(true);
-    const res = await fetch(`https://api.npms.io/v2/package/${search}`).then((res) => res.json());
-    setSearchResults(res);
-    setAnalytics(pre => {
-      return {
-        ...pre,
-        ...res,
+    try {
+
+      setSearching(true);
+      let res = await fetch(`https://api.npms.io/v2/package/${search}`);
+      console.log(res, '11')
+      if (res.status == 404) {
+        console.log('not found')
+        setSearching(false);
+        setAnalytics(pre => {
+          return {
+            ...pre,
+            isNotFound: true
+          }
+        });
+        return false;
       }
-    });
-    console.log(res)
+      res = await res.json();
+
+      setSearchResults(res);
+      setAnalytics(pre => {
+        return {
+          ...pre,
+          ...res,
+          isNotFound: false
+        }
+      });
+      console.log(res)
+      setSearching(false);
+      return true;
+    } catch (e) {
+      setSearching(false);
+      setAnalytics(pre => {
+        return {
+          ...pre,
+          isNotFound: true,
+        }
+      });
+
+      return false;
+    }
   };
 
+  const initFunction = async () => {
+    const success = await fetchPackageInfo();
+    if (success) {
+      fetchDownloadsForLastYear();
+    }
+  };
+  console.log(analytics)
   React.useEffect(() => {
     // load from query string
     const urlParams = new URLSearchParams(window.location.search);
@@ -217,9 +257,7 @@ const HomePage = () => {
     if (packageName) {
       setSearch(packageName);
     }
-    fetchPackageInfo();
-    fetchDownloadsForLastYear();
-
+    initFunction();
     return () => {
       window.myLine?.destroy();
       window.myLine = null;
@@ -236,7 +274,11 @@ const HomePage = () => {
     // update the url.
     setSearching(true);
     window.history.pushState({}, '', `/?package=${search}`);
-    fetchDownloadsForLastYear(dateValue[0], dateValue[1]);
+    const success = await fetchPackageInfo();
+    if (success) {
+      fetchDownloadsForLastYear();
+    }
+
   };
 
   const handleDateValue = (value) => {
@@ -263,17 +305,17 @@ const HomePage = () => {
         <section className="w-auto text-gray-600 ">
           {
             searching &&
-            <div class="absolute bg-white bg-opacity-60 z-10 h-full w-full flex items-center justify-center">
-              <div class="flex items-center">
-                <svg class="animate-spin h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            <div className="absolute bg-white bg-opacity-60 z-10 h-full w-full flex items-center justify-center">
+              <div className="flex items-center">
+                <svg className="animate-spin h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
               </div>
             </div>
           }
           <div className="max-w-3xl mx-auto p-4 sm:px-6 h-full">
-            <div className="flex flex-col col-span-full xl:col-span-8 bg-white rounded-md shadow-lg rounded-md border border-gray-200">
+            <div className="flex flex-col col-span-full xl:col-span-8 bg-white rounded-md shadow-lg border border-gray-200">
               <header className="px-5 py-4 border-b border-gray-100 flex items-center">
 
                 <h2 className="font-semibold text-gray-800">Check Statistics for NPM Package</h2>
@@ -310,106 +352,134 @@ const HomePage = () => {
             </div>
           </div>
         </section>
-        {/* Performance */}
-        <section className="w-auto flex-col justify-center antialiased text-gray-600">
-          <div className="max-w-3xl mx-auto p-4 sm:px-6 h-full">
-            <div className="flex flex-col col-span-full rounded-md xl:col-span-8 bg-white shadow-lg rounded-md border border-gray-200 gap-6 px-6 py-6">
-              <div>
-                <div className="mb-1 text-base font-medium text-green-700 dark:text-green-500">Maintenance ({(analytics?.score?.detail?.maintenance * 100).toFixed()}%)</div>
-                <div className="w-full bg-gray-200 rounded-md h-2.5 dark:bg-gray-700">
-                  <div className="bg-green-600 h-3 rounded-md" style={{ width: `${(analytics?.score?.detail?.maintenance * 100)}%` }}></div>
-                </div>
-              </div>
-              <div>
-                <div className="mb-1 text-base font-medium text-sky-700 dark:text-sky-500">Quality ({(analytics?.score?.detail?.quality * 100).toFixed()}%)</div>
-                <div className="w-full bg-gray-200 rounded-md h-2.5 dark:bg-gray-700">
-                  <div className="bg-sky-600 h-3 rounded-md" style={{ width: `${(analytics?.score?.detail?.quality * 100)}%` }}></div>
-                </div>
-              </div>
-              <div>
-                <div className="mb-1 text-base font-medium text-orange-700 dark:text-orange-500">Popularity ({(analytics?.score?.detail?.popularity * 100).toFixed()}%)</div>
-                <div className="w-full bg-gray-200 rounded-md h-2.5 dark:bg-gray-700">
-                  <div className="bg-orange-600 h-3 rounded-md" style={{ width: `${(analytics?.score?.detail?.popularity * 100)}%` }}></div>
-                </div>
-              </div>
+        {
+          !analytics.isNotFound ? <>
+            {/* Performance */}
+            <section className="w-auto flex-col justify-center antialiased text-gray-600">
+              <div className="max-w-3xl mx-auto p-4 sm:px-6 h-full">
+                <div className="flex flex-col col-span-full rounded-md xl:col-span-8 bg-white shadow-lg rounded-md border border-gray-200 gap-6 px-6 py-6">
+                  <div>
+                    <div className="mb-1 text-base font-medium text-green-700 dark:text-green-500">Maintenance ({(analytics?.score?.detail?.maintenance * 100).toFixed()}%)</div>
+                    <div className="w-full bg-gray-200 rounded-md h-2.5 dark:bg-gray-700">
+                      <div className="bg-green-600 h-3 rounded-md" style={{ width: `${(analytics?.score?.detail?.maintenance * 100)}%` }}></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="mb-1 text-base font-medium text-sky-700 dark:text-sky-500">Quality ({(analytics?.score?.detail?.quality * 100).toFixed()}%)</div>
+                    <div className="w-full bg-gray-200 rounded-md h-2.5 dark:bg-gray-700">
+                      <div className="bg-sky-600 h-3 rounded-md" style={{ width: `${(analytics?.score?.detail?.quality * 100)}%` }}></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="mb-1 text-base font-medium text-orange-700 dark:text-orange-500">Popularity ({(analytics?.score?.detail?.popularity * 100).toFixed()}%)</div>
+                    <div className="w-full bg-gray-200 rounded-md h-2.5 dark:bg-gray-700">
+                      <div className="bg-orange-600 h-3 rounded-md" style={{ width: `${(analytics?.score?.detail?.popularity * 100)}%` }}></div>
+                    </div>
+                  </div>
 
-              <div>
-                <div className="mb-1 text-base font-medium text-indigo-700 dark:text-indigo-500">Overall ({(analytics?.score?.final * 100).toFixed()}%)</div>
-                <div className="w-full bg-gray-200 rounded-md h-2.5 dark:bg-gray-700">
-                  <div className="bg-indigo-600 h-3 rounded-md" style={{ width: `${(analytics?.score?.final * 100)}%` }}></div>
+                  <div>
+                    <div className="mb-1 text-base font-medium text-indigo-700 dark:text-indigo-500">Overall ({(analytics?.score?.final * 100).toFixed()}%)</div>
+                    <div className="w-full bg-gray-200 rounded-md h-2.5 dark:bg-gray-700">
+                      <div className="bg-indigo-600 h-3 rounded-md" style={{ width: `${(analytics?.score?.final * 100)}%` }}></div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </section>
-        {/* Analytics */}
-        <section className="w-auto flex-col justify-center antialiased text-gray-600">
-          <div className="max-w-3xl mx-auto p-4 sm:px-6 h-full">
-            <div className="flex flex-col col-span-full rounded-md xl:col-span-8 bg-white shadow-lg rounded-md border border-gray-200">
-              <header className="px-5 py-4 border-b border-gray-100 flex items-center">
-                <h2 className="font-semibold text-gray-800">Analytics</h2>
-                {/* Label */}
-                <div className="ml-auto flex items-center">
-                  <div className="text-sm font-medium text-gray-500 mr-2">{analytics.startEndStr}</div>
-                  {/* <Datepicker
+            </section>
+            {/* Analytics */}
+            <section className="w-auto flex-col justify-center antialiased text-gray-600">
+              <div className="max-w-3xl mx-auto p-4 sm:px-6 h-full">
+                <div className="flex flex-col col-span-full rounded-md xl:col-span-8 bg-white shadow-lg rounded-md border border-gray-200">
+                  <header className="px-5 py-4 border-b border-gray-100 flex items-center">
+                    <h2 className="font-semibold text-gray-800">Analytics</h2>
+                    {/* Label */}
+                    <div className="ml-auto flex items-center">
+                      <div className="text-sm font-medium text-gray-500 mr-2">{analytics.startEndStr}</div>
+                      {/* <Datepicker
                     value={dateValue}
                     onChange={handleDateValue}
                   /> */}
-                  <div className="flex items-center justify-center bg-gray-100 rounded-md w-8 h-8">
-                    <svg
+                      <div className="flex items-center justify-center bg-gray-100 rounded-md w-8 h-8">
+                        <svg
 
-                      className="w-4 h-4 text-gray-500"
-                      viewBox="0 0 16 16"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M8 0a8 8 0 100 16A8 8 0 008 0zM4.5 8a3.5 3.5 0 117 0 3.5 3.5 0 01-7 0z"
-                        clipRule="evenodd"
-                      ></path>
-                    </svg>
-                  </div>
-
-                </div>
-              </header>
-              <div className="px-5 py-1">
-                <div className="flex flex-wrap">
-                  <div className="flex items-center py-2">
-                    <div className="mr-5">
-                      <div className="flex items-center">
-                        <div className="text-3xl font-bold text-gray-800 mr-2">{analytics.totalDownloads}</div>
+                          className="w-4 h-4 text-gray-500"
+                          viewBox="0 0 16 16"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M8 0a8 8 0 100 16A8 8 0 008 0zM4.5 8a3.5 3.5 0 117 0 3.5 3.5 0 01-7 0z"
+                            clipRule="evenodd"
+                          ></path>
+                        </svg>
                       </div>
-                      <div className="text-sm text-gray-500">Total Downloads</div>
+
                     </div>
-                    <div className="hidden md:block w-px h-8 bg-gray-200 mr-5" aria-hidden="true"></div>
-                  </div>
-                  <div className="flex items-center py-2">
-                    <div className="mr-5">
-                      <div className="flex items-center">
-                        <div className="text-3xl font-bold text-gray-800 mr-2">{analytics.avgDownloadsMonthly}</div>
+                  </header>
+                  <div className="px-5 py-1">
+                    <div className="flex flex-wrap">
+                      <div className="flex items-center py-2">
+                        <div className="mr-5">
+                          <div className="flex items-center">
+                            <div className="text-3xl font-bold text-gray-800 mr-2">{analytics.totalDownloads}</div>
+                          </div>
+                          <div className="text-sm text-gray-500">Total Downloads</div>
+                        </div>
+                        <div className="hidden md:block w-px h-8 bg-gray-200 mr-5" aria-hidden="true"></div>
                       </div>
-                      <div className="text-sm text-gray-500">Average Monthly Downloads</div>
-                    </div>
-                    <div className="hidden md:block w-px h-8 bg-gray-200 mr-5" aria-hidden="true"></div>
-                  </div><div className="flex items-center py-2">
-                    <div className="mr-5">
-                      <div className="flex items-center">
-                        <div className="text-3xl font-bold text-gray-800 mr-2">{analytics.avgDownloadsWeekly}</div>
+                      <div className="flex items-center py-2">
+                        <div className="mr-5">
+                          <div className="flex items-center">
+                            <div className="text-3xl font-bold text-gray-800 mr-2">{analytics.avgDownloadsMonthly}</div>
+                          </div>
+                          <div className="text-sm text-gray-500">Average Monthly Downloads</div>
+                        </div>
+                        <div className="hidden md:block w-px h-8 bg-gray-200 mr-5" aria-hidden="true"></div>
+                      </div><div className="flex items-center py-2">
+                        <div className="mr-5">
+                          <div className="flex items-center">
+                            <div className="text-3xl font-bold text-gray-800 mr-2">{analytics.avgDownloadsWeekly}</div>
+                          </div>
+                          <div className="text-sm text-gray-500">Average Weekly Downloads</div>
+                        </div>
+                        <div className="hidden md:block w-px h-8 bg-gray-200 mr-5" aria-hidden="true"></div>
                       </div>
-                      <div className="text-sm text-gray-500">Average Weekly Downloads</div>
-                    </div>
-                    <div className="hidden md:block w-px h-8 bg-gray-200 mr-5" aria-hidden="true"></div>
-                  </div>
 
 
+                    </div>
+                  </div>
+                  <div className="flex-grow">
+                    <canvas id="chart" width="800" height="300"></canvas>
+                  </div>
                 </div>
               </div>
-              <div className="flex-grow">
-                <canvas id="chart" width="800" height="300"></canvas>
-              </div>
-            </div>
-          </div>
-        </section>
+            </section>
+          </>
+            : (
+              <section className="w-auto max-w-3xl mx-auto p-4 sm:px-6 h-full bg-white rounded-md shadow-lg border border-gray-200">
+                <div className="max-w-3xl mx-auto p-4 sm:px-6 h-full ">
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="flex items-center justify-center w-16 h-16 mb-4 rounded-full bg-gray-100">
+
+                      <svg
+                        className="w-8 h-8 text-gray-500"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M12 0a12 12 0 100 24 12 12 0 000-24zM6.5 8a3.5 3.5 0 117 0 3.5 3.5 0 01-7 0zm9 8a4 4 0 11-8 0 4 4 0 018 0zm-9 0a5 5 0 1110 0 5 5 0 01-10 0z"
+                          clipRule="evenodd"
+                        ></path>
+                      </svg>
+                    </div>
+                    <h2 className="text-xl font-medium text-gray-600 dark:text-gray-400">No analytics available</h2>
+                    <p className="text-gray-500 dark:text-gray-300">Analytics will be available after the package has been downloaded at least once.</p>
+                  </div>
+                </div>
+              </section>
+            )
+        }
       </main>
     </Layout >
   );
