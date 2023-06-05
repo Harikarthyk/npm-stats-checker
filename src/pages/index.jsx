@@ -18,6 +18,8 @@ const HomePage = () => {
     avgDownloadsWeekly: 0
   });
   const fetchFromStartAndEnd = async (startDate, endDate) => {
+    if (searching) return;
+    setSearching(true);
     const labels = [];
     const dates = [];
     const start = new Date(startDate);
@@ -192,9 +194,11 @@ const HomePage = () => {
         maintainAspectRatio: true
       },
     });
+    setSearching(false);
   };
 
   const fetchPackageInfo = async () => {
+    setSearching(true);
     const res = await fetch(`https://api.npms.io/v2/package/${search}`).then((res) => res.json());
     setSearchResults(res);
     setAnalytics(pre => {
@@ -226,9 +230,11 @@ const HomePage = () => {
 
   const [search, setSearch] = React.useState('react-native');
   const [searchResults, setSearchResults] = React.useState([]);
+  const [searching, setSearching] = React.useState(true);
   const [dateValue, setDateValue] = React.useState([new Date(), new Date()]);
   const searchPackageStats = async () => {
     // update the url.
+    setSearching(true);
     window.history.pushState({}, '', `/?package=${search}`);
     fetchDownloadsForLastYear(dateValue[0], dateValue[1]);
   };
@@ -255,6 +261,17 @@ const HomePage = () => {
       <main className="w-full min-h-screen bg-gray-100 flex flex-col justify-center align-middle">
         {/* Search */}
         <section className="w-auto text-gray-600 ">
+          {
+            searching &&
+            <div class="absolute bg-white bg-opacity-60 z-10 h-full w-full flex items-center justify-center">
+              <div class="flex items-center">
+                <svg class="animate-spin h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
+            </div>
+          }
           <div className="max-w-3xl mx-auto p-4 sm:px-6 h-full">
             <div className="flex flex-col col-span-full xl:col-span-8 bg-white rounded-md shadow-lg rounded-md border border-gray-200">
               <header className="px-5 py-4 border-b border-gray-100 flex items-center">
