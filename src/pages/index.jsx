@@ -142,7 +142,7 @@ const HomePage = () => {
     window.history.pushState({}, '', `/?package=${search}`);
     const success = await fetchPackageInfo();
     if (success) {
-      fetchDownloadsForLastYear();
+      fetchDownloadsForLastYear(search);
     }
   };
 
@@ -150,7 +150,7 @@ const HomePage = () => {
     setActiveTab(tab);
   };
 
-  const fetchDownloadsForLastYear = async () => {
+  const fetchDownloadsForLastYear = async (search) => {
     setFetchingGraphData(true);
     const dates = [];
     const labels = [];
@@ -228,21 +228,22 @@ const HomePage = () => {
     }
   };
 
-  const initFunction = async () => {
+  const initFunction = async (search) => {
     const success = await fetchPackageInfo();
     if (success) {
-      fetchDownloadsForLastYear();
+      fetchDownloadsForLastYear(search);
     }
   };
 
   React.useEffect(() => {
     // load from query string
     const urlParams = new URLSearchParams(window.location.search);
-    const packageName = urlParams.get('package');
+    let packageName = urlParams.get('package');
     if (packageName) {
       setSearch(packageName);
     }
-    initFunction();
+    packageName = packageName || 'react-native';
+    initFunction(packageName);
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
