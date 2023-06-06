@@ -1,23 +1,19 @@
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 
-// !STARTERCONF Change these default meta
+// !STARTERCONF Change these default meta.
+
+
+// NPM Statistic checker and alternative suggestion.
 const defaultMeta = {
-  title: 'Next.js + Tailwind CSS + TypeScript Starter',
-  siteName: 'Next.js + Tailwind CSS + TypeScript Starter',
-  description:
-    'A starter for Next.js, Tailwind CSS, and TypeScript with Absolute Import, Seo, Link component, pre-configured with Husky',
-  /** Without additional '/' on the end, e.g. https://theodorusclarence.com */
-  url: 'https://tsnext-tw.thcl.dev',
+  title: 'NPM Statistic Checker and Alternative Suggestion',
+  siteName: 'NPM Statistic Checker and Alternative Suggestion',
+  description: 'A tool for checking NPM package statistics and providing alternative suggestions.',
+  url: 'https://example.com', // Replace with the actual URL of your website
   type: 'website',
   robots: 'follow, index',
-  /**
-   * No need to be filled, will be populated with openGraph function
-   * If you wish to use a normal image, just specify the path below
-   */
-  image: 'https://tsnext-tw.thcl.dev/images/large-og.png',
+  image: 'https://example.com/images/large-og.png', // Replace with the URL of the image you want to use
 };
-
 type SeoProps = {
   date?: string;
   templateTitle?: string;
@@ -75,7 +71,7 @@ export default function Seo(props: SeoProps) {
           <meta
             name='author'
             property='article:author'
-            content='Theodorus Clarence'
+            content='Hari Karthyk'
           />
         </>
       )}
@@ -97,19 +93,19 @@ const favicons: Array<React.ComponentPropsWithoutRef<'link'>> = [
   {
     rel: 'apple-touch-icon',
     sizes: '180x180',
-    href: '/favicon/apple-touch-icon.png',
+    href: '/favicon/favicon.png',
   },
   {
     rel: 'icon',
     type: 'image/png',
     sizes: '32x32',
-    href: '/favicon/favicon-32x32.png',
+    href: '/favicon/favicon.png',
   },
   {
     rel: 'icon',
     type: 'image/png',
     sizes: '16x16',
-    href: '/favicon/favicon-16x16.png',
+    href: '/favicon/favicon.png',
   },
   { rel: 'manifest', href: '/favicon/site.webmanifest' },
   {
