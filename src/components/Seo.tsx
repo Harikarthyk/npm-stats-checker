@@ -8,11 +8,12 @@ import { useRouter } from 'next/router';
 const defaultMeta = {
   title: 'NPM Statistic Checker and Alternative Suggestion',
   siteName: 'NPM Statistic Checker and Alternative Suggestion',
-  description: 'A tool for checking NPM package statistics and providing alternative suggestions.',
+  description: 'A tool for checking NPM package statistics and providing alternative suggestions, download statistics for npm packages',
   url: 'https://example.com', // Replace with the actual URL of your website
   type: 'website',
   robots: 'follow, index',
-  image: 'https://example.com/images/large-og.png', // Replace with the URL of the image you want to use
+  image: 'https://example.com/images/large-og.png',
+  keywords: "npm, node.js, statistics, chart, downloads" // Replace with the URL of the image you want to use
 };
 type SeoProps = {
   date?: string;
@@ -50,15 +51,9 @@ export default function Seo(props: SeoProps) {
       <meta property='og:type' content={meta.type} />
       <meta property='og:site_name' content={meta.siteName} />
       <meta property='og:description' content={meta.description} />
+      <meta property='og:keywords' content={meta.keywords} />
       <meta property='og:title' content={meta.title} />
       <meta name='image' property='og:image' content={meta.image} />
-      {/* Twitter */}
-      <meta name='twitter:card' content='summary_large_image' />
-      {/* // !STARTERCONF Remove or change to your handle */}
-      {/* <meta name='twitter:site' content='@th_clarence' /> */}
-      <meta name='twitter:title' content={meta.title} />
-      <meta name='twitter:description' content={meta.description} />
-      <meta name='twitter:image' content={meta.image} />
       {meta.date && (
         <>
           <meta property='article:published_time' content={meta.date} />
