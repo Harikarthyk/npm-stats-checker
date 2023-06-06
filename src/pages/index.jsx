@@ -1,18 +1,17 @@
-import * as React from 'react';
-
 import Chart from "chart.js/auto";
+import * as React from 'react';
 import 'chartjs-adapter-moment';
-import Layout from '@/components/layout/Layout';
-import Seo from '@/components/Seo';
 
+import AlternativesContent from '@/components/Alternatives';
 import AnalyticsContent from '@/components/Analytics';
-import TitleCardContent from '@/components/TitleCard';
-import TabsContent from '@/components/Tabs';
-import SearchPackageContent from '@/components/SearchPackage';
 import InvalidPackageContent from '@/components/layout/InvalidPackage';
+import Layout from '@/components/layout/Layout';
 import ReadmeContent from '@/components/Readme';
-
 import SearchingOverlay from '@/components/SearchingOverlay';
+import SearchPackageContent from '@/components/SearchPackage';
+import Seo from '@/components/Seo';
+import TabsContent from '@/components/Tabs';
+import TitleCardContent from '@/components/TitleCard';
 
 
 const formatThousands = (value) => Intl.NumberFormat('en-US', {
@@ -120,7 +119,7 @@ const fetchDownloadData = async (labels, search) => {
   return result;
 };
 
-
+let alternativeMap = {};
 
 const HomePage = () => {
 
@@ -132,10 +131,12 @@ const HomePage = () => {
     avgDownloadsWeekly: 0,
     isNotFound: false
   });
+  const [alternative, setAlternative] = React.useState("");
   const [activeTab, setActiveTab] = React.useState("Analytics");
 
   const [search, setSearch] = React.useState('react-native');
   const [searching, setSearching] = React.useState(true);
+  const [analyzing, setAnalyzing] = React.useState(true);
   const [fetchingGraphData, setFetchingGraphData] = React.useState(false);
 
   const searchPackageStats = async () => {
@@ -192,9 +193,7 @@ const HomePage = () => {
     try {
       setSearching(true);
       let res = await fetch(`https://api.npms.io/v2/package/${search}`);
-      console.log(res, '11')
       if (res.status == 404) {
-        console.log('not found')
         setSearching(false);
         setAnalytics(pre => {
           return {
@@ -213,7 +212,6 @@ const HomePage = () => {
           isNotFound: false
         }
       });
-      console.log(res)
       setSearching(false);
       return true;
     } catch (e) {
@@ -243,10 +241,46 @@ const HomePage = () => {
     if (activeTab === "Readme") {
       return <ReadmeContent analytics={analytics} />
     }
+    if (activeTab === "Alternatives") {
+      return <AlternativesContent analyzing={analyzing} alternative={alternative} analytics={analytics} />
+    }
+
     return null;
   };
 
   React.useEffect(() => {
+    const getAlternatives = async (search) => {
+      setAnalyzing(true);
+      if (alternativeMap[search]) {
+        setAlternative(alternativeMap[search]);
+        setAnalyzing(false);
+        return;
+      }
+      const res = await fetch(`https://api.openai.com/v1/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_OPENAI_TOKEN}`
+        },
+        body: JSON.stringify({
+          "model": "gpt-3.5-turbo",
+          "messages": [{
+            "role": "user",
+            "content": `Is this are any similar or other packages which is better compared to ${analytics?.collected?.metadata?.name || search} package. and also share the reason along with respective home page`
+          }]
+        })
+      }).then(res => res.json()).catch(e => console.warn(e));
+      const choices = res?.choices || [];
+      const message = choices[0]?.message?.content || '';
+      if (message) {
+        setAlternative(message);
+        alternativeMap[search] = message;
+      } else {
+        alternativeMap[search] = message;
+        setAlternative('No alternatives found');
+      }
+      setAnalyzing(false);
+    };
     // load from query string
     const urlParams = new URLSearchParams(window.location.search);
     let packageName = urlParams.get('package');
@@ -256,6 +290,11 @@ const HomePage = () => {
     packageName = packageName || 'react-native';
     initFunction(packageName);
 
+
+    if (activeTab === "Alternatives") {
+      getAlternatives(packageName);
+    }
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
@@ -263,7 +302,7 @@ const HomePage = () => {
     <Layout>
       <Seo />
       <SearchingOverlay show={searching} />
-      <main className="w-full min-h-screen bg-gray-100 flex flex-col justify-center align-middle">
+      <main className="w-full min-h-screen bg-gray-100 flex flex-col ">
         <SearchPackageContent
           search={search}
           setSearch={setSearch}

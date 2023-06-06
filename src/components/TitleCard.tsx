@@ -1,7 +1,7 @@
 import React from 'react'
 
 interface Props {
-  analytics: any
+  analytics: any;
 }
 
 const TitleCard = ({ analytics }: Props) => {
