@@ -30,7 +30,7 @@ const SearchPackage = ({
                     placeholder="Eg. react-native"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-
+                    onSubmit={searchPackageStats}
                   />
                 </div>
                 <div className="flex flex-col  sm:flex-row sm:space-x-4 sm:w-64 w-full">
