@@ -178,7 +178,10 @@ const HomePage = () => {
     });
 
 
-    const ctx = document.getElementById('chart').getContext('2d');
+    const ctx = document.getElementById('chart')?.getContext('2d');
+    if (!ctx) {
+      return;
+    }
     labels.pop();
     createLineChart(ctx, labels, result, `${labels[labels.length - 1]} to ${labels[0]}`);
     setFetchingGraphData(false);
@@ -240,13 +243,9 @@ const HomePage = () => {
       setSearch(packageName);
     }
     initFunction();
-    return () => {
-      window.myLine?.destroy();
-      window.myLine = null;
-    }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [activeTab]);
 
   return (
     <Layout>
