@@ -10,6 +10,7 @@ import TitleCardContent from '@/components/TitleCard';
 import TabsContent from '@/components/Tabs';
 import SearchPackageContent from '@/components/SearchPackage';
 import InvalidPackageContent from '@/components/layout/InvalidPackage';
+import ReadmeContent from '@/components/Readme';
 
 import SearchingOverlay from '@/components/SearchingOverlay';
 
@@ -235,6 +236,16 @@ const HomePage = () => {
     }
   };
 
+  const renderContent = () => {
+    if (activeTab === "Analytics") {
+      return <AnalyticsContent fetchingGraphData={fetchingGraphData} analytics={analytics} />
+    }
+    if (activeTab === "Readme") {
+      return <ReadmeContent analytics={analytics} />
+    }
+    return null;
+  };
+
   React.useEffect(() => {
     // load from query string
     const urlParams = new URLSearchParams(window.location.search);
@@ -261,9 +272,8 @@ const HomePage = () => {
         <InvalidPackageContent analytics={analytics}>
           <TabsContent activeTab={activeTab} onTabChange={onTabChange} />
           <TitleCardContent analytics={analytics} />
-          {
-            activeTab === "Analytics" ? <AnalyticsContent fetchingGraphData={fetchingGraphData} analytics={analytics} /> : null
-          }
+          {renderContent()}
+
         </InvalidPackageContent>
       </main>
     </Layout >
