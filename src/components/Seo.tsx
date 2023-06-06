@@ -9,10 +9,10 @@ const defaultMeta = {
   title: 'NPM Statistic Checker and Alternative Suggestion',
   siteName: 'NPM Statistic Checker and Alternative Suggestion',
   description: 'A tool for checking NPM package statistics and providing alternative suggestions, download statistics for npm packages',
-  url: 'https://example.com', // Replace with the actual URL of your website
+  url: '', // Replace with the actual URL of your website
   type: 'website',
   robots: 'follow, index',
-  image: 'https://example.com/images/large-og.png',
+  image: '',
   keywords: "npm, node.js, statistics, chart, downloads" // Replace with the URL of the image you want to use
 };
 type SeoProps = {
