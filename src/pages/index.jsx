@@ -262,7 +262,7 @@ const HomePage = () => {
           <TabsContent activeTab={activeTab} onTabChange={onTabChange} />
           <TitleCardContent analytics={analytics} />
           {
-            activeTab === "Analytics" ? <AnalyticsContent analytics={analytics} /> : null
+            activeTab === "Analytics" ? <AnalyticsContent fetchingGraphData={fetchingGraphData} analytics={analytics} /> : null
           }
         </InvalidPackageContent>
       </main>
