@@ -1,4 +1,5 @@
 import React from 'react';
+import { ReactMarkdown } from 'react-markdown/lib/react-markdown';
 interface Props {
   alternative: any;
   analytics: any;
@@ -31,7 +32,7 @@ const Alternatives = ({ alternative, analytics, analyzing }: Props) => {
           <div className="flex flex-col sm:flex-row sm:space-x-4">
             <div className="flex flex-col sm:flex-row sm:space-x-4">
               <div className="flex flex-col gap-3">
-                {
+                {/* {
                   alternative && alternative?.split("\n")?.map((item: any, i: any) => {
                     return (
                       <div key={i} className="text-base font-medium text-gray-700 dark:text-gray-200">
@@ -39,7 +40,10 @@ const Alternatives = ({ alternative, analytics, analyzing }: Props) => {
                       </div>
                     )
                   })
-                }
+                } */}
+                <ReactMarkdown>
+                  {alternative}
+                </ReactMarkdown>
               </div>
             </div>
           </div>

@@ -108,11 +108,11 @@ const createLineChart = (ctx, labels, data, label) => {
 };
 
 
-const fetchDownloadData = async (labels, search) => {
+const fetchDownloadData = async (labels, _search) => {
   const result = [];
   for (let i = labels.length - 1; i >= 1; i--) {
     const res = await fetch(
-      `https://api.npmjs.org/downloads/point/${labels[i]}:${labels[i - 1]}/${search}`
+      `https://api.npmjs.org/downloads/point/${labels[i]}:${labels[i - 1]}/${_search}`
     ).then((res) => res.json());
     result.push(res.downloads || 0);
   }
@@ -142,9 +142,10 @@ const HomePage = () => {
   const searchPackageStats = async () => {
     setSearching(true);
     window.history.pushState({}, '', `/?package=${search}`);
-    const success = await fetchPackageInfo();
+    const success = await fetchPackageInfo(search);
     if (success) {
       fetchDownloadsForLastYear(search);
+      setActiveTab("Analytics");
     }
   };
 
@@ -152,7 +153,7 @@ const HomePage = () => {
     setActiveTab(tab);
   };
 
-  const fetchDownloadsForLastYear = async (search) => {
+  const fetchDownloadsForLastYear = async (_search) => {
     setFetchingGraphData(true);
     const dates = [];
     const labels = [];
@@ -165,7 +166,7 @@ const HomePage = () => {
       labels.push(label);
     }
 
-    const result = await fetchDownloadData(labels, search);
+    const result = await fetchDownloadData(labels, _search);
     const totalDownloads = result.reduce((a, b) => a + b, 0);
     setAnalytics(pre => {
       return {
@@ -189,10 +190,10 @@ const HomePage = () => {
     setFetchingGraphData(false);
   };
 
-  const fetchPackageInfo = async () => {
+  const fetchPackageInfo = async (_search) => {
     try {
       setSearching(true);
-      let res = await fetch(`https://api.npms.io/v2/package/${search}`);
+      let res = await fetch(`https://api.npms.io/v2/package/${_search}`);
       if (res.status == 404) {
         setSearching(false);
         setAnalytics(pre => {
@@ -204,7 +205,6 @@ const HomePage = () => {
         return false;
       }
       res = await res.json();
-
       setAnalytics(pre => {
         return {
           ...pre,
@@ -227,10 +227,10 @@ const HomePage = () => {
     }
   };
 
-  const initFunction = async (search) => {
-    const success = await fetchPackageInfo();
+  const initFunction = async (_search) => {
+    const success = await fetchPackageInfo(_search);
     if (success) {
-      fetchDownloadsForLastYear(search);
+      fetchDownloadsForLastYear(_search);
     }
   };
 
@@ -247,47 +247,69 @@ const HomePage = () => {
 
     return null;
   };
+  const getAlternatives = async (search) => {
+    setAnalyzing(true);
+    if (alternativeMap[search]) {
+      setAlternative(alternativeMap[search]);
+      setAnalyzing(false);
+      return;
+    }
+    const res = await fetch(`https://api.openai.com/v1/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_OPENAI_TOKEN}`
+      },
+      body: JSON.stringify({
+        "model": "gpt-3.5-turbo",
+        "messages": [{
+          "role": "user",
+          "content": `Is this are any similar or other packages which is better compared to ${analytics?.collected?.metadata?.name || search} package. and also share the reason along with respective home page.
+          
+          Return the response in README. Like below format. Also all the links and href should be clickable. and should be in markdown format with neatly formatted.
+
+          #### Package Name: ${analytics?.collected?.metadata?.name || search}
+
+          ###### Description: ${analytics?.collected?.metadata?.description || 'No description found'}
+
+          ###### Home Page: ${analytics?.collected?.metadata?.links?.homepage || 'No homepage found'}
+
+          ###### Repository: ${analytics?.collected?.metadata?.links?.repository || 'No repository found'}
+
+          ###### NPM Page: ${analytics?.collected?.metadata?.links?.npm || 'No npm page found'}
+
+          ###### Downloads: ${analytics?.collected?.npm?.downloads?.count || 'No downloads found'}
+
+          ###### Stars: ${analytics?.collected?.github?.starsCount || 'No stars found'}
+
+          \n\n
+          
+          `
+        }],
+        "temperature": 0
+      })
+    }).then(res => res.json()).catch(e => console.warn(e));
+    const choices = res?.choices || [];
+    const message = choices[0]?.message?.content || '';
+    if (message) {
+      setAlternative(message);
+      alternativeMap[search] = message;
+    } else {
+      alternativeMap[search] = message;
+      setAlternative('No alternatives found');
+    }
+    setAnalyzing(false);
+  };
 
   React.useEffect(() => {
-    const getAlternatives = async (search) => {
-      setAnalyzing(true);
-      if (alternativeMap[search]) {
-        setAlternative(alternativeMap[search]);
-        setAnalyzing(false);
-        return;
-      }
-      const res = await fetch(`https://api.openai.com/v1/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_OPENAI_TOKEN}`
-        },
-        body: JSON.stringify({
-          "model": "gpt-3.5-turbo",
-          "messages": [{
-            "role": "user",
-            "content": `Is this are any similar or other packages which is better compared to ${analytics?.collected?.metadata?.name || search} package. and also share the reason along with respective home page`
-          }]
-        })
-      }).then(res => res.json()).catch(e => console.warn(e));
-      const choices = res?.choices || [];
-      const message = choices[0]?.message?.content || '';
-      if (message) {
-        setAlternative(message);
-        alternativeMap[search] = message;
-      } else {
-        alternativeMap[search] = message;
-        setAlternative('No alternatives found');
-      }
-      setAnalyzing(false);
-    };
+
     // load from query string
     const urlParams = new URLSearchParams(window.location.search);
     let packageName = urlParams.get('package');
+    packageName = packageName || 'react-native';
     if (packageName) {
       setSearch(packageName);
     }
-    packageName = packageName || 'react-native';
     initFunction(packageName);
 
 
