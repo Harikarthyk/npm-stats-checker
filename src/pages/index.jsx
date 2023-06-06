@@ -4,6 +4,7 @@ import 'chartjs-adapter-moment';
 
 import AlternativesContent from '@/components/Alternatives';
 import AnalyticsContent from '@/components/Analytics';
+import Footer from '@/components/Footer';
 import InvalidPackageContent from '@/components/layout/InvalidPackage';
 import Layout from '@/components/layout/Layout';
 import ReadmeContent from '@/components/Readme';
@@ -337,6 +338,7 @@ const HomePage = () => {
 
         </InvalidPackageContent>
       </main>
+      <Footer />
     </Layout >
   );
 }
